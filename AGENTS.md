@@ -37,21 +37,17 @@ Agents working in this repo should optimize for:
 - UI components: `shadcn/ui`
 - Backend: NestJS
 - API style: REST
-- Database: PostgreSQL with Prisma ORM
+- Database: PostgreSQL
 - Authentication: simple JWT auth
 
 ## Database Guidance
 
 PostgreSQL is mandatory.
 
-Prisma is also required for this project.
+No ORM is required for this project.
 
-Agents should use Prisma for:
-
-- Schema definition
-- Migrations
-- Typed database access
-- Relational modeling between users and tasks
+Agents may use direct SQL access or a lightweight query approach, but should keep
+the persistence layer explicit, maintainable, and easy to evolve.
 
 ## Architecture Rules
 

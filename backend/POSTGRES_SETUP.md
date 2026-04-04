@@ -1,6 +1,6 @@
 # PostgreSQL Setup
 
-This project uses PostgreSQL with Prisma for the NestJS backend.
+This project uses PostgreSQL for the NestJS backend.
 
 ## 1. Install PostgreSQL on Ubuntu/Debian
 
@@ -34,19 +34,4 @@ cp /home/smriti/my-projects/Task-Manager/backend/.env.example /home/smriti/my-pr
 
 ```bash
 psql -h localhost -U taskmanager_user -d taskmanager_db
-```
-
-## 6. After NestJS is initialized in `backend/`
-
-Install Prisma packages:
-
-```bash
-npm install prisma @prisma/client
-npm install -D prisma
-```
-
-Then create the first migration:
-
-```bash
-npx prisma migrate dev --name init
 ```

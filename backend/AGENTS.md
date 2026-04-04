@@ -17,10 +17,9 @@ Build a clean NestJS REST API for authentication, profile access, and task manag
 
 - NestJS
 - PostgreSQL
-- Prisma
 - JWT auth
 
-Prisma is required as the ORM and database access layer for this project.
+No ORM is required for this project.
 
 ## Module Structure
 
@@ -100,7 +99,7 @@ Keep status values consistent across backend and frontend.
 ## Data and Persistence Guidance
 
 - Use PostgreSQL as the source of truth
-- Use Prisma schema and Prisma migrations
+- Keep database access patterns consistent and explicit
 - Keep schema naming clear and conventional
 - Include a migration strategy
 - Prefer explicit relations between users and tasks
