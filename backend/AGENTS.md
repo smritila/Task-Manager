@@ -9,7 +9,7 @@ Build a clean NestJS REST API for authentication, profile access, and task manag
 - User registration
 - User login
 - JWT authentication
-- Authenticated profile endpoint
+- Authenticated profile read/update endpoints
 - Task create/read/update/delete endpoints
 - Support task status management
 
@@ -100,6 +100,127 @@ Keep modules cohesive and avoid mixing unrelated concerns.
 - Use guards for auth-protected routes
 - Return predictable JSON response shapes
 
+## Current Implemented API Surface
+
+Agents should treat the following routes as the current source of truth unless they are intentionally being changed:
+
+### App Routes
+
+- `GET /`
+  - Simple application status/hello response from `AppController`
+
+### Auth Routes
+
+- `POST /auth/register`
+  - Public route
+  - Validates registration input
+  - Creates a user
+  - Returns:
+    - `accessToken`
+    - `user`
+
+- `POST /auth/login`
+  - Public route
+  - Validates login input
+  - Returns:
+    - `accessToken`
+    - `user`
+
+- `GET /auth/me`
+  - Protected by JWT
+  - Returns:
+    - `user`
+
+- `PATCH /auth/me`
+  - Protected by JWT
+  - Partially updates the authenticated user's profile
+  - Currently supports:
+    - `firstName`
+    - `lastName`
+    - `email`
+  - Returns:
+    - `user`
+
+Important current convention:
+
+- Profile endpoints currently live under `auth/` as `/auth/me`
+- Agents should preserve this unless there is an intentional refactor to a dedicated profile or users controller
+
+### Task Routes
+
+- `POST /tasks`
+  - Protected by JWT
+  - Creates a task for the authenticated user
+  - Request body currently supports:
+    - `title`
+    - `description`
+    - `status`
+    - `startDateTime`
+    - `endDateTime`
+  - Returns:
+    - `task`
+
+- `GET /tasks`
+  - Protected by JWT
+  - Returns only tasks owned by the authenticated user
+  - Returns:
+    - `tasks`
+
+- `PATCH /tasks/:id`
+  - Protected by JWT
+  - Partially updates a task owned by the authenticated user
+  - Request body currently supports:
+    - `title`
+    - `description`
+    - `status`
+    - `startDateTime`
+    - `endDateTime`
+  - Returns:
+    - `task`
+
+- `DELETE /tasks/:id`
+  - Protected by JWT
+  - Deletes a task owned by the authenticated user
+  - Returns:
+    - `message`
+
+### Response Shape Conventions
+
+Current controller responses are intentionally simple and should remain consistent:
+
+- Auth success responses:
+  - `{ accessToken, user }`
+- Profile read/update responses:
+  - `{ user }`
+- Task list responses:
+  - `{ tasks }`
+- Task create/update responses:
+  - `{ task }`
+- Task delete responses:
+  - `{ message }`
+
+### Normalized API Field Names
+
+Even though PostgreSQL uses task-specific column names, the current API surface exposes normalized frontend-facing fields:
+
+- User fields:
+  - `id`
+  - `firstName`
+  - `lastName`
+  - `email`
+  - `createdAt`
+  - `updatedAt`
+
+- Task fields:
+  - `id`
+  - `title`
+  - `description`
+  - `status`
+  - `createdAt`
+  - `startDateTime`
+  - `endDateTime`
+  - `userId`
+
 ## Authentication Guidance
 
 Simple JWT authentication is acceptable for this project.
@@ -111,6 +232,7 @@ Minimum expectations:
 - Password hashing
 - JWT issuance on successful login
 - Protected routes for profile and task actions
+- JWT user resolution by authenticated user id, not by trusting stale client profile data
 
 ## Validation and Error Handling
 
@@ -149,6 +271,7 @@ If the API exposes normalized response fields such as `id`, `title`, `descriptio
 - Users should only access their own profile and tasks
 - Task queries must be scoped to the authenticated user
 - Task update/delete actions must verify ownership
+- Task read actions must also be ownership-scoped
 
 ## Data and Persistence Guidance
 
@@ -168,6 +291,8 @@ API responses should be:
 - Consistent
 - Easy for frontend consumption
 - Free of unnecessary nesting unless justified
+
+Agents should update this document when routes, payloads, or response conventions change so the steering guidance stays aligned with the real controller surface.
 
 ## Maintainability Rules
 

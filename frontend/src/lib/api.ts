@@ -1,5 +1,15 @@
+import axios, { type AxiosRequestConfig } from 'axios';
+
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? '/api';
+
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export class ApiError extends Error {
   status: number;
@@ -19,35 +29,36 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
-    },
-    body:
-      options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  try {
+    const config: AxiosRequestConfig = {
+      url: path,
+      method: options.method,
+      headers: options.headers as AxiosRequestConfig['headers'],
+      data: options.body,
+      signal: options.signal ?? undefined,
+    };
 
-  if (!response.ok) {
-    let errorMessage = 'Something went wrong. Please try again.';
+    const response = await apiClient.request(config);
 
-    try {
-      const errorBody = (await response.json()) as {
-        message?: string | string[];
-      };
+    return response.data as T;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorBody = error.response?.data as
+        | { message?: string | string[] }
+        | undefined;
+      let errorMessage = 'Something went wrong. Please try again.';
 
-      if (Array.isArray(errorBody.message)) {
+      if (Array.isArray(errorBody?.message)) {
         errorMessage = errorBody.message[0] ?? errorMessage;
-      } else if (errorBody.message) {
+      } else if (errorBody?.message) {
         errorMessage = errorBody.message;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    } catch {
-      errorMessage = response.statusText || errorMessage;
+
+      throw new ApiError(errorMessage, error.response?.status ?? 500);
     }
 
-    throw new ApiError(errorMessage, response.status);
+    throw new ApiError('Something went wrong. Please try again.', 500);
   }
-
-  return (await response.json()) as T;
 }
