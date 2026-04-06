@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -10,6 +11,7 @@ import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface AuthResponse {
   accessToken: string;
@@ -58,6 +60,29 @@ export class AuthService {
     }
 
     return this.buildAuthResponse(this.usersService.toAuthenticatedUser(user));
+  }
+
+  async updateProfile(
+    userId: number,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<AuthenticatedUser> {
+    if (
+      updateProfileDto.firstName === undefined &&
+      updateProfileDto.lastName === undefined &&
+      updateProfileDto.email === undefined
+    ) {
+      throw new BadRequestException(
+        'Provide at least one profile field to update.',
+      );
+    }
+
+    const updatedUser = await this.usersService.updateUserProfile(userId, {
+      firstName: updateProfileDto.firstName,
+      lastName: updateProfileDto.lastName,
+      email: updateProfileDto.email,
+    });
+
+    return this.usersService.toAuthenticatedUser(updatedUser);
   }
 
   private async buildAuthResponse(

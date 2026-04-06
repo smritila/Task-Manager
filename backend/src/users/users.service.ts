@@ -19,6 +19,12 @@ interface CreateUserInput {
   passwordHash: string;
 }
 
+interface UpdateUserProfileInput {
+  firstName?: string;
+  lastName?: string | null;
+  email?: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly databaseService: DatabaseService) {}
@@ -56,6 +62,46 @@ export class UsersService {
           input.lastName?.trim() || null,
           input.email,
           input.passwordHash,
+        ],
+      );
+
+      return result.rows[0];
+    } catch (error: unknown) {
+      if (this.isUniqueViolation(error)) {
+        throw new ConflictException(
+          'An account with this email already exists.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async updateUserProfile(
+    userId: number,
+    input: UpdateUserProfileInput,
+  ): Promise<UserRow> {
+    try {
+      const hasFirstName = input.firstName !== undefined;
+      const hasLastName = input.lastName !== undefined;
+      const hasEmail = input.email !== undefined;
+
+      const result = await this.databaseService.query<UserRow>(
+        `UPDATE public.users
+         SET first_name = CASE WHEN $2 THEN $3 ELSE first_name END,
+             last_name = CASE WHEN $4 THEN $5 ELSE last_name END,
+             email = CASE WHEN $6 THEN $7 ELSE email END,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING id, first_name, last_name, email, password_hash, created_at, updated_at`,
+        [
+          userId,
+          hasFirstName,
+          input.firstName,
+          hasLastName,
+          hasLastName ? input.lastName : null,
+          hasEmail,
+          input.email,
         ],
       );
 
