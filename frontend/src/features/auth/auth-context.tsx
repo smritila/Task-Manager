@@ -6,6 +6,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import { getCurrentUser } from './auth-api';
 import {
   clearSession,
   getStoredToken,
@@ -16,9 +17,12 @@ import type { AuthUser } from './types';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
+  isLoading: boolean;
   token: string | null;
   user: AuthUser | null;
   setSession: (token: string, user: AuthUser) => void;
+  refreshUser: () => Promise<void>;
+  updateUser: (user: AuthUser) => void;
   logout: () => void;
 }
 
@@ -27,29 +31,77 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setToken(getStoredToken());
-    setUser(getStoredUser());
+    const storedToken = getStoredToken();
+    const storedUser = getStoredUser();
+
+    setToken(storedToken);
+    setUser(storedUser);
+
+    if (!storedToken) {
+      setIsLoading(false);
+      return;
+    }
+
+    void (async () => {
+      try {
+        const response = await getCurrentUser();
+        saveSession(storedToken, response.user);
+        setUser(response.user);
+      } catch {
+        clearSession();
+        setToken(null);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated: Boolean(token && user),
+      isLoading,
       token,
       user,
       setSession: (nextToken, nextUser) => {
         saveSession(nextToken, nextUser);
         setToken(nextToken);
         setUser(nextUser);
+        setIsLoading(false);
+      },
+      refreshUser: async () => {
+        const currentToken = getStoredToken();
+
+        if (!currentToken) {
+          clearSession();
+          setToken(null);
+          setUser(null);
+          return;
+        }
+
+        const response = await getCurrentUser();
+        saveSession(currentToken, response.user);
+        setToken(currentToken);
+        setUser(response.user);
+      },
+      updateUser: (nextUser) => {
+        const currentToken = token ?? getStoredToken();
+        if (currentToken) {
+          saveSession(currentToken, nextUser);
+        }
+        setUser(nextUser);
       },
       logout: () => {
         clearSession();
         setToken(null);
         setUser(null);
+        setIsLoading(false);
       },
     }),
-    [token, user],
+    [isLoading, token, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

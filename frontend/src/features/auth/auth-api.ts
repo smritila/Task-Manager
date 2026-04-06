@@ -3,6 +3,8 @@ import type {
   AuthResponse,
   LoginFormValues,
   RegisterFormValues,
+  AuthUser,
+  UpdateProfileValues,
 } from './types';
 
 export function login(payload: LoginFormValues) {
@@ -19,5 +21,16 @@ export function register(payload: RegisterFormValues) {
       ...payload,
       lastName: payload.lastName.trim() || undefined,
     },
+  });
+}
+
+export function getCurrentUser() {
+  return apiRequest<{ user: AuthUser }>('/auth/me');
+}
+
+export function updateCurrentUser(payload: UpdateProfileValues) {
+  return apiRequest<{ user: AuthUser }>('/auth/me', {
+    method: 'PATCH',
+    body: payload,
   });
 }

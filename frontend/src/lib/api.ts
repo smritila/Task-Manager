@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import { getStoredToken } from '@/features/auth/auth-storage';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? '/api';
@@ -30,10 +31,15 @@ export async function apiRequest<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   try {
+    const token = getStoredToken();
+
     const config: AxiosRequestConfig = {
       url: path,
       method: options.method,
-      headers: options.headers as AxiosRequestConfig['headers'],
+      headers: {
+        ...(options.headers as AxiosRequestConfig['headers']),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       data: options.body,
       signal: options.signal ?? undefined,
     };
