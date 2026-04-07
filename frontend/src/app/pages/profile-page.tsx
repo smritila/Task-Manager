@@ -32,11 +32,10 @@ function getDefaultValues(user: AuthUser | null): ProfileFormValues {
 }
 
 export function ProfilePage() {
-  const { logout, updateUser, user } = useAuth();
+  const { logout, updateUser, user, isLoading } = useAuth();
   const [values, setValues] = useState<ProfileFormValues>(() =>
     getDefaultValues(user),
   );
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -44,27 +43,6 @@ export function ProfilePage() {
   useEffect(() => {
     setValues(getDefaultValues(user));
   }, [user]);
-
-  useEffect(() => {
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await getCurrentUser();
-        updateUser(response.user);
-        setValues(getDefaultValues(response.user));
-      } catch (loadError) {
-        setError(
-          loadError instanceof ApiError
-            ? loadError.message
-            : 'Unable to load your profile details right now.',
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, [updateUser]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
