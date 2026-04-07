@@ -11,6 +11,14 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/features/auth/auth-context';
 import { createTask, deleteTask, getTasks, updateTask } from '@/features/tasks/task-api';
@@ -62,6 +70,7 @@ export function DashboardPage() {
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null);
   const [taskActionError, setTaskActionError] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isCreateTaskSheetOpen, setIsCreateTaskSheetOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | TaskStatus>('all');
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
   const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
@@ -125,6 +134,7 @@ export function DashboardPage() {
       setTasks((current) => [response.task, ...current]);
       setFormValues(defaultTaskValues);
       setTaskActionMessage('Task created successfully.');
+      setIsCreateTaskSheetOpen(false);
     } catch (error) {
       setTaskActionError(
         error instanceof ApiError
@@ -179,327 +189,341 @@ export function DashboardPage() {
   }
 
   return (
-    <AppShell onLogout={logout}>
-      <main className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <section className="flex flex-col gap-6">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(249,115,22,0.16))]">
-              <p className="text-sm uppercase tracking-[0.2em] text-primary">
-                User Card
-              </p>
-              <CardTitle className="text-3xl">
-                {user?.firstName} {user?.lastName}
-              </CardTitle>
-              <CardDescription>
-                Your current account snapshot from the authenticated backend profile.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Email
-                </p>
-                <p className="mt-1 text-sm font-medium">{user?.email}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Registered
-                </p>
-                <p className="mt-1 text-sm font-medium">
-                  {formatDate(user?.createdAt)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-secondary/65 p-4 text-sm leading-6 text-muted-foreground">
-                Use the profile page to keep your account details current while
-                your dashboard stays focused on task execution.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm uppercase tracking-[0.2em] text-primary">
-                Create Task
-              </p>
-              <CardTitle>Capture your next piece of work</CardTitle>
-              <CardDescription>
-                Add a title, set the first status, and optionally schedule when it
-                should start or finish.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-5" onSubmit={handleCreateTask}>
-                <div className="space-y-2">
-                  <Label htmlFor="task-title">Task title</Label>
-                  <Input
-                    id="task-title"
-                    value={formValues.title}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        title: event.target.value,
-                      }))
-                    }
-                    placeholder="Prepare sprint planning notes"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="task-description">Description</Label>
-                  <Textarea
-                    id="task-description"
-                    value={formValues.description}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        description: event.target.value,
-                      }))
-                    }
-                    placeholder="Add any context that will make this easier to finish later."
-                  />
-                </div>
-
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="task-status">Initial status</Label>
-                    <select
-                      id="task-status"
-                      className="flex h-11 w-full rounded-2xl border border-input bg-white/90 px-4 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      value={formValues.status}
-                      onChange={(event) =>
-                        setFormValues((current) => ({
-                          ...current,
-                          status: event.target.value as TaskStatus,
-                        }))
-                      }
-                    >
-                      {statusOptions.map((status) => (
-                        <option key={status.value} value={status.value}>
-                          {status.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="task-start">Start date & time</Label>
-                    <Input
-                      id="task-start"
-                      type="datetime-local"
-                      value={formValues.startDateTime}
-                      onChange={(event) =>
-                        setFormValues((current) => ({
-                          ...current,
-                          startDateTime: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="task-end">End date & time</Label>
-                  <Input
-                    id="task-end"
-                    type="datetime-local"
-                    value={formValues.endDateTime}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        endDateTime: event.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                {taskActionError ? <Alert tone="destructive">{taskActionError}</Alert> : null}
-                {taskActionMessage ? <Alert tone="success">{taskActionMessage}</Alert> : null}
-
-                <Button className="w-full" disabled={isCreatingTask} type="submit">
-                  {isCreatingTask ? 'Creating task...' : 'Create task'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="flex flex-col gap-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                  Total tasks
-                </p>
-                <CardTitle className="text-4xl">{taskStats.total}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                  To do
-                </p>
-                <CardTitle className="text-4xl">{taskStats.todo}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                  In progress
-                </p>
-                <CardTitle className="text-4xl">{taskStats.inProgress}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                  Completed
-                </p>
-                <CardTitle className="text-4xl">{taskStats.done}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
+    <>
+      <AppShell onLogout={logout}>
+        <main className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <section className="flex flex-col gap-6">
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(249,115,22,0.16))]">
                 <p className="text-sm uppercase tracking-[0.2em] text-primary">
-                  Task Board
+                  User Card
                 </p>
-                <CardTitle>Keep work moving with clear status ownership</CardTitle>
+                <CardTitle className="text-3xl">
+                  {user?.firstName} {user?.lastName}
+                </CardTitle>
                 <CardDescription>
-                  Filtering is enabled so the dashboard does more than basic CRUD and
-                  supports focused planning.
+                  Your current account snapshot from the authenticated backend profile.
                 </CardDescription>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {filterOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setActiveFilter(option.value)}
-                    className={[
-                      'rounded-full px-4 py-2 text-sm font-medium transition',
-                      activeFilter === option.value
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-secondary/75 text-foreground hover:bg-secondary',
-                    ].join(' ')}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {tasksError ? (
-                <Alert tone="destructive">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span>{tasksError}</span>
-                    <Button onClick={() => void loadTasks()} size="sm" type="button" variant="outline">
-                      Retry
-                    </Button>
-                  </div>
-                </Alert>
-              ) : null}
-
-              {isLoadingTasks ? (
-                <div className="rounded-3xl border border-dashed border-border bg-secondary/40 p-8 text-sm text-muted-foreground">
-                  Loading your task list and current status counts...
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Email
+                  </p>
+                  <p className="mt-1 text-sm font-medium">{user?.email}</p>
                 </div>
-              ) : null}
-
-              {!isLoadingTasks && !tasksError && visibleTasks.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-border bg-secondary/40 p-8">
-                  <h3 className="text-lg font-semibold">Nothing here yet</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {tasks.length === 0
-                      ? 'Create your first task from the panel on the left to start building momentum.'
-                      : 'No tasks match the current status filter. Choose a different filter to explore the rest of your work.'}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Registered
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    {formatDate(user?.createdAt)}
                   </p>
                 </div>
-              ) : null}
+                <div className="rounded-3xl bg-secondary/65 p-4 text-sm leading-6 text-muted-foreground">
+                  Use the profile page to keep your account details current while
+                  your dashboard stays focused on task execution.
+                </div>
+              </CardContent>
+            </Card>
+          </section>
 
-              {!isLoadingTasks && !tasksError && visibleTasks.length > 0 ? (
-                <div className="space-y-4">
-                  {visibleTasks.map((task) => (
-                    <article
-                      key={task.id}
-                      className="rounded-[28px] border border-border/80 bg-white/80 p-5 shadow-sm"
+          <section className="flex flex-col gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-4">
+                  <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+                    Total tasks
+                  </p>
+                  <CardTitle className="text-4xl">{taskStats.total}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-4">
+                  <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+                    To do
+                  </p>
+                  <CardTitle className="text-4xl">{taskStats.todo}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-4">
+                  <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+                    In progress
+                  </p>
+                  <CardTitle className="text-4xl">{taskStats.inProgress}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-4">
+                  <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+                    Completed
+                  </p>
+                  <CardTitle className="text-4xl">{taskStats.done}</CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.2em] text-primary">
+                    Task Board
+                  </p>
+                  <CardTitle>Keep work moving with clear status ownership</CardTitle>
+                  <CardDescription>
+                    Filtering is enabled so the dashboard does more than basic CRUD and
+                    supports focused planning.
+                  </CardDescription>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" onClick={() => setIsCreateTaskSheetOpen(true)}>
+                    Create Task
+                  </Button>
+                  {filterOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setActiveFilter(option.value)}
+                      className={[
+                        'rounded-full px-4 py-2 text-sm font-medium transition',
+                        activeFilter === option.value
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-secondary/75 text-foreground hover:bg-secondary',
+                      ].join(' ')}
                     >
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-xl font-semibold">{task.title}</h3>
-                            <span
-                              className={[
-                                'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]',
-                                getStatusPillClassName(task.status),
-                              ].join(' ')}
-                            >
-                              {getStatusLabel(task.status)}
-                            </span>
-                          </div>
-
-                          <p className="text-sm leading-6 text-muted-foreground">
-                            {task.description?.trim() || 'No description provided for this task.'}
-                          </p>
-
-                          <dl className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
-                            <div>
-                              <dt className="font-medium text-foreground">Created</dt>
-                              <dd>{formatDate(task.createdAt)}</dd>
-                            </div>
-                            <div>
-                              <dt className="font-medium text-foreground">Starts</dt>
-                              <dd>{formatDateTime(task.startDateTime)}</dd>
-                            </div>
-                            <div>
-                              <dt className="font-medium text-foreground">Ends</dt>
-                              <dd>{formatDateTime(task.endDateTime)}</dd>
-                            </div>
-                          </dl>
-                        </div>
-
-                        <div className="flex flex-col gap-3 sm:min-w-52">
-                          <select
-                            aria-label={`Update status for ${task.title}`}
-                            className="flex h-11 w-full rounded-2xl border border-input bg-white/90 px-4 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                            disabled={updatingTaskId === task.id}
-                            value={task.status}
-                            onChange={(event) =>
-                              void handleStatusChange(
-                                task.id,
-                                event.target.value as TaskStatus,
-                              )
-                            }
-                          >
-                            {statusOptions.map((status) => (
-                              <option key={status.value} value={status.value}>
-                                {status.label}
-                              </option>
-                            ))}
-                          </select>
-
-                          <Button
-                            disabled={deletingTaskId === task.id}
-                            onClick={() => void handleDeleteTask(task.id)}
-                            type="button"
-                            variant="outline"
-                          >
-                            {deletingTaskId === task.id ? 'Deleting...' : 'Delete task'}
-                          </Button>
-                        </div>
-                      </div>
-                    </article>
+                      {option.label}
+                    </button>
                   ))}
                 </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </section>
-      </main>
-    </AppShell>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {taskActionMessage ? <Alert tone="success">{taskActionMessage}</Alert> : null}
+                {!isCreateTaskSheetOpen && taskActionError ? (
+                  <Alert tone="destructive">{taskActionError}</Alert>
+                ) : null}
+
+                {tasksError ? (
+                  <Alert tone="destructive">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <span>{tasksError}</span>
+                      <Button onClick={() => void loadTasks()} size="sm" type="button" variant="outline">
+                        Retry
+                      </Button>
+                    </div>
+                  </Alert>
+                ) : null}
+
+                {isLoadingTasks ? (
+                  <div className="rounded-3xl border border-dashed border-border bg-secondary/40 p-8 text-sm text-muted-foreground">
+                    Loading your task list and current status counts...
+                  </div>
+                ) : null}
+
+                {!isLoadingTasks && !tasksError && visibleTasks.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-border bg-secondary/40 p-8">
+                    <h3 className="text-lg font-semibold">Nothing here yet</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {tasks.length === 0
+                        ? 'Create your first task from the Create Task button to start building momentum.'
+                        : 'No tasks match the current status filter. Choose a different filter to explore the rest of your work.'}
+                    </p>
+                  </div>
+                ) : null}
+
+                {!isLoadingTasks && !tasksError && visibleTasks.length > 0 ? (
+                  <div className="space-y-4">
+                    {visibleTasks.map((task) => (
+                      <article
+                        key={task.id}
+                        className="rounded-[28px] border border-border/80 bg-white/80 p-5 shadow-sm"
+                      >
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h3 className="text-xl font-semibold">{task.title}</h3>
+                              <span
+                                className={[
+                                  'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]',
+                                  getStatusPillClassName(task.status),
+                                ].join(' ')}
+                              >
+                                {getStatusLabel(task.status)}
+                              </span>
+                            </div>
+
+                            <p className="text-sm leading-6 text-muted-foreground">
+                              {task.description?.trim() || 'No description provided for this task.'}
+                            </p>
+
+                            <dl className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+                              <div>
+                                <dt className="font-medium text-foreground">Created</dt>
+                                <dd>{formatDate(task.createdAt)}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-medium text-foreground">Starts</dt>
+                                <dd>{formatDateTime(task.startDateTime)}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-medium text-foreground">Ends</dt>
+                                <dd>{formatDateTime(task.endDateTime)}</dd>
+                              </div>
+                            </dl>
+                          </div>
+
+                          <div className="flex flex-col gap-3 sm:min-w-52">
+                            <select
+                              aria-label={`Update status for ${task.title}`}
+                              className="flex h-11 w-full rounded-2xl border border-input bg-white/90 px-4 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                              disabled={updatingTaskId === task.id}
+                              value={task.status}
+                              onChange={(event) =>
+                                void handleStatusChange(
+                                  task.id,
+                                  event.target.value as TaskStatus,
+                                )
+                              }
+                            >
+                              {statusOptions.map((status) => (
+                                <option key={status.value} value={status.value}>
+                                  {status.label}
+                                </option>
+                              ))}
+                            </select>
+
+                            <Button
+                              disabled={deletingTaskId === task.id}
+                              onClick={() => void handleDeleteTask(task.id)}
+                              type="button"
+                              variant="outline"
+                            >
+                              {deletingTaskId === task.id ? 'Deleting...' : 'Delete task'}
+                            </Button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </section>
+        </main>
+      </AppShell>
+
+      <Sheet open={isCreateTaskSheetOpen} onOpenChange={setIsCreateTaskSheetOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <p className="text-sm uppercase tracking-[0.2em] text-primary">
+              Create Task
+            </p>
+            <SheetTitle>Capture your next piece of work</SheetTitle>
+            <SheetDescription>
+              Add a title, set the first status, and optionally schedule when it
+              should start or finish.
+            </SheetDescription>
+          </SheetHeader>
+
+          <form className="flex flex-1 flex-col" onSubmit={handleCreateTask}>
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-6 sm:px-8 sm:pb-8">
+              <div className="space-y-2">
+                <Label htmlFor="task-title">Task title</Label>
+                <Input
+                  id="task-title"
+                  value={formValues.title}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder="Prepare sprint planning notes"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-description">Description</Label>
+                <Textarea
+                  id="task-description"
+                  value={formValues.description}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder="Add any context that will make this easier to finish later."
+                />
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="task-status">Initial status</Label>
+                  <select
+                    id="task-status"
+                    className="flex h-11 w-full rounded-2xl border border-input bg-white/90 px-4 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    value={formValues.status}
+                    onChange={(event) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        status: event.target.value as TaskStatus,
+                      }))
+                    }
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="task-start">Start date & time</Label>
+                  <Input
+                    id="task-start"
+                    type="datetime-local"
+                    value={formValues.startDateTime}
+                    onChange={(event) =>
+                      setFormValues((current) => ({
+                        ...current,
+                        startDateTime: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-end">End date & time</Label>
+                <Input
+                  id="task-end"
+                  type="datetime-local"
+                  value={formValues.endDateTime}
+                  onChange={(event) =>
+                    setFormValues((current) => ({
+                      ...current,
+                      endDateTime: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              {taskActionError ? <Alert tone="destructive">{taskActionError}</Alert> : null}
+            </div>
+
+            <SheetFooter>
+              <Button className="w-full sm:w-auto" disabled={isCreatingTask} type="submit">
+                {isCreatingTask ? 'Creating task...' : 'Create task'}
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
