@@ -271,31 +271,31 @@ export function DashboardPage() {
                     Task Board
                   </p>
                   <CardTitle>Keep work moving with clear status ownership</CardTitle>
-                  <CardDescription>
-                    Filtering is enabled so the dashboard does more than basic CRUD and
-                    supports focused planning.
-                  </CardDescription>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="min-w-44">
+                    <Label className="sr-only" htmlFor="task-filter">
+                      Filter tasks by status
+                    </Label>
+                    <select
+                      id="task-filter"
+                      className="flex h-11 w-full rounded-full border border-input bg-white/90 px-4 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      value={activeFilter}
+                      onChange={(event) =>
+                        setActiveFilter(event.target.value as 'all' | TaskStatus)
+                      }
+                    >
+                      {filterOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <Button type="button" onClick={() => setIsCreateTaskSheetOpen(true)}>
                     Create Task
                   </Button>
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setActiveFilter(option.value)}
-                      className={[
-                        'rounded-full px-4 py-2 text-sm font-medium transition',
-                        activeFilter === option.value
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-secondary/75 text-foreground hover:bg-secondary',
-                      ].join(' ')}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
                 </div>
               </CardHeader>
 
