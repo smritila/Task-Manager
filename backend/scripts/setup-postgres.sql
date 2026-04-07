@@ -1,6 +1,30 @@
-CREATE USER taskmanager_user WITH PASSWORD 'taskmanager_pass';
-CREATE DATABASE taskmanager_db OWNER taskmanager_user;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_catalog.pg_roles
+        WHERE rolname = 'taskmanager_user'
+    ) THEN
+        CREATE ROLE taskmanager_user LOGIN PASSWORD 'taskmanager_pass';
+    END IF;
+END
+$$;
+
+ALTER ROLE taskmanager_user WITH LOGIN PASSWORD 'taskmanager_pass';
+
+SELECT 'CREATE DATABASE taskmanager_db OWNER taskmanager_user'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_database
+    WHERE datname = 'taskmanager_db'
+)\gexec
+
+ALTER DATABASE taskmanager_db OWNER TO taskmanager_user;
 GRANT ALL PRIVILEGES ON DATABASE taskmanager_db TO taskmanager_user;
+\connect taskmanager_db
+
+GRANT USAGE, CREATE ON SCHEMA public TO taskmanager_user;
+ALTER SCHEMA public OWNER TO taskmanager_user;
 
 -- Table: public.users
 
@@ -17,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.users
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_email_key UNIQUE (email)
-)
+);
 
 -- Table: public.tasks
 
@@ -55,3 +79,17 @@ CREATE TABLE IF NOT EXISTS public.tasks
     )
 );
 
+ALTER TABLE public.users OWNER TO taskmanager_user;
+ALTER TABLE public.tasks OWNER TO taskmanager_user;
+
+ALTER SEQUENCE IF EXISTS public.users_id_seq OWNER TO taskmanager_user;
+ALTER SEQUENCE IF EXISTS public.tasks_task_id_seq OWNER TO taskmanager_user;
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO taskmanager_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO taskmanager_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA public
+GRANT ALL PRIVILEGES ON TABLES TO taskmanager_user;
+
+ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA public
+GRANT ALL PRIVILEGES ON SEQUENCES TO taskmanager_user;

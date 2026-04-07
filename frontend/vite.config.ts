@@ -8,8 +8,11 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000',
     },
   },
   resolve: {

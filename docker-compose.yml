@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend-init:
+    image: task-manager-backend:dev
+    build:
+      context: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://taskmanager_user:taskmanager_pass@db:5432/taskmanager_db?schema=public
+      JWT_SECRET: khul-ja-sim-sim
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_SUPERUSER: postgres
+      POSTGRES_SUPERPASSWORD: postgres
+      POSTGRES_SUPERDATABASE: postgres
+    restart: "no"
+    command: ["sh", "scripts/init-db.sh"]
+
+  backend:
+    image: task-manager-backend:dev
+    build:
+      context: ./backend
+    depends_on:
+      backend-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://taskmanager_user:taskmanager_pass@db:5432/taskmanager_db?schema=public
+      JWT_SECRET: khul-ja-sim-sim
+      PORT: "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    ports:
+      - "3000:3000"
+
+  frontend:
+    image: task-manager-frontend:dev
+    build:
+      context: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      VITE_API_URL: /api
+      VITE_API_PROXY_TARGET: http://backend:3000
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
