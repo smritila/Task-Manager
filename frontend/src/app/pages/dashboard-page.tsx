@@ -63,7 +63,7 @@ function getStatusPillClassName(status: TaskStatus) {
 }
 
 export function DashboardPage() {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
@@ -191,43 +191,7 @@ export function DashboardPage() {
   return (
     <>
       <AppShell onLogout={logout}>
-        <main className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-          <section className="flex flex-col gap-6">
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(249,115,22,0.16))]">
-                <p className="text-sm uppercase tracking-[0.2em] text-primary">
-                  User Card
-                </p>
-                <CardTitle className="text-3xl">
-                  {user?.firstName} {user?.lastName}
-                </CardTitle>
-                <CardDescription>
-                  Your current account snapshot from the authenticated backend profile.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Email
-                  </p>
-                  <p className="mt-1 text-sm font-medium">{user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Registered
-                  </p>
-                  <p className="mt-1 text-sm font-medium">
-                    {formatDate(user?.createdAt)}
-                  </p>
-                </div>
-                <div className="rounded-3xl bg-secondary/65 p-4 text-sm leading-6 text-muted-foreground">
-                  Use the profile page to keep your account details current while
-                  your dashboard stays focused on task execution.
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
+        <main className="flex flex-col gap-6">
           <section className="flex flex-col gap-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <Card>
